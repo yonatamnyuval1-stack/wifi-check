@@ -4,8 +4,6 @@ A small terminal program that looks at nearby WiFi networks and rates them.
 
 It uses the network list Windows already shows. It does not connect to any network.
 
-Demo: https://yonatamnyuval1-stack.github.io/wifi-check/
-
 ## Run
 
 WiFi has to be on. Then, from this folder:
