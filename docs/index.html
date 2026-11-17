@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WiFi check demo</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 40px; max-width: 640px; }
+pre { background: #111; color: #eee; padding: 16px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>WiFi check</h1>
+<p>This is a terminal program for Windows. It reads the WiFi list the computer already shows, rates each network, and prints the result. It does not connect to any network.</p>
+<p>From the project folder, with WiFi on:</p>
+<pre>python main.py</pre>
+<p>It scans 3 times, so it takes a few seconds.</p>
+<h2>Example output</h2>
+<pre>scanning a few times...
+scanning again...
+scanning again...
+Found 2 network(s)
+
+Cafe Guest
+ score: 1/10
+ security score: 1/10
+ stability score: 8/10
+ security: Open
+signal: 74%
+ jump: 4%
+ channel: 6
+ band: 2.4 GHz
+ why:
+ - security: bad security
+ - stability: strong signal
+ - stability: 2.4 GHz is more crowded
+
+Home
+ score: 7/10
+ security score: 7/10
+ stability score: 10/10
+ security: WPA2-Personal
+signal: 90%
+ jump: 0%
+ channel: 40
+ band: 5 GHz
+ why:
+ - security: ok security
+ - stability: strong signal
+ - stability: 5 GHz band
+</pre>
+<p>The final score is the lower of the security score and the stability score. Weaker networks are printed first.</p>
+<p><a href="https://github.com/yonatamnyuval1-stack/wifi-check">Source on GitHub</a></p>
+</body>
+</html>
