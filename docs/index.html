@@ -3,11 +3,16 @@
 <head>
 <meta charset="utf-8">
 <title>WIFI secscan demo!!</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 40px; max-width: 640px; }
+pre { background: #111; color: #eee; padding: 16px; overflow-x: auto; }
+</style>
 </head>
 <body>
 <h1>WIFI check demo</h1>
-<p>This program runs in the terminal on Windows.</p>
+<p>This is a terminal program for Windows. It reads the WiFi list the computer already shows, rates each network, and prints the result. It does not connect to any network.</p>
 <p>Run it with python main.py</p>
+<p>It scans 3 times, so it takes a few seconds.</p>
 <pre>
 scanning a few times...
 scanning again...
@@ -27,5 +32,7 @@ why:
 - stability: strong signal
 - stability: 5GHz band
 </pre>
+<p>The final score is the lower of the security score and the stability score. Weaker networks are printed first.</p>
+<p><a href="https://github.com/yonatamnyuval1-stack/wifi-check">Source on GitHub</a></p>
 </body>
 </html>
