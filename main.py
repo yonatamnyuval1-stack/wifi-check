@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2026 Jonathan Jacob
+
 import subprocess
 import time
 
@@ -49,8 +52,20 @@ def read_networks(text):
             networks.append(current)
         elif current is not None and line.startswith("Authentication"):
             current["auth"] = line.split(":", 1)[1].strip()
-        elif current is not None and line.startswith("Signal") and current["signal"] == "?":
-            current["signal"] = line.split(":", 1)[1].strip()
+        elif current is not None and line.startswith("Signal"):
+            new_signal = line.split(":", 1)[1].strip()
+            new_text = new_signal.replace("%","").strip()
+            old_text = current["signal"].replace("%","").strip()
+            new_number = -1
+            old_number = -1
+            if new_text.isdigit():
+                new_number = int(new_text)
+            if old_text.isdigit():
+                old_number = int(old_text)
+            if current["signal"] == "?" or new_number > old_number:
+                current["signal"] = new_signal
+                current["channel"] = "?"
+                current["band"] = "?"
         elif current is not None and line.startswith("Channel") and current["channel"] == "?":
             current["channel"] = line.split(":", 1)[1].strip()
         elif current is not None and line.startswith("Band") and current["band"] == "?":
@@ -114,6 +129,17 @@ def scan_few_times():
             if num < smallest:
                 smallest = num
             item["jump"] = biggest-smallest
+        ordered = []
+        for num in nums:
+            ordered.append(num)
+        ordered.sort()
+        if len(ordered) %2 == 1:
+            middle = ordered[len(ordered) // 2]
+        else:
+            left = ordered[len(ordered) // 2-1]
+            right = ordered[len(ordered) // 2]
+            middle = (left+right) // 2
+        item["signal"] = str(middle) + "%"
     return last_network
 
 def rate_network(item,crowd):
@@ -177,6 +203,16 @@ def show_networks(networks):
     mark_mixed_names(networks)
     print("Found", len(networks), "network(s)")
     print("")
+    for item in networks:
+        crowd = count_on_channel(networks, item["channel"])
+        final,score,steady,reasons,steady_reasons = rate_network(item,crowd)
+        item["final"] = final
+    for i in range(len(networks)):
+        for j in range(len(networks)-1):
+            if networks[j]["final"] > networks[j+1]["final"]:
+                temp = networks[j]
+                networks[j] = networks[j+1]
+                networks[j+1] = temp
     for item in networks:
         crowd = count_on_channel(networks, item["channel"])
         final,score,steady, reasons, steady_reasons = rate_network(item, crowd)
