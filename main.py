@@ -93,6 +93,65 @@ def count_on_channel(networks, channel):
             count = count+1
     return count
 
+def channel_rows(networks):
+    rows = []
+    for item in networks:
+        channel = item["channel"]
+        if channel == "?":
+            continue
+        found = False
+        for row in rows:
+            if row["channel"] == channel:
+                row["count"] = row["count"]+1
+                found = True
+        if found == False:
+            new_row = {
+                "channel": channel,
+                "band": item["band"],
+                "count": 1
+            }
+            rows.append(new_row)
+    for i in range(len(rows)):
+        for j in range(len(rows)-1):
+            left = rows[j]["channel"]
+            right = rows[j+1]["channel"]
+            left_num = -1
+            right_num = -1
+            if left.isdigit():
+                left_num = int(left)
+            if right.isdigit():
+                right_num = int(right)
+            if left_num>right_num:
+                temp = rows[j]
+                rows[j] = rows[j+1]
+                rows[j+1] = temp
+    return rows
+def show_channels(networks):
+    rows = channel_rows(networks)
+    print("")
+    print("channels")
+    if len(rows) == 0:
+        print("no channels")
+        return
+    quiet = rows[0]
+    for row in rows:
+        if row["count"] < quiet["count"]:
+            quiet=row
+        marks = ""
+        n= 0
+        while n < row["count"]:
+            marks = marks + "#"
+            n=n+1
+        channel_text = row["channel"]
+        while len(channel_text) < 4:
+            channel_text = channel_text + " "
+        band_text = row["band"]
+        while len(band_text) < 10:
+            band_text = band_text+" "
+        while len(marks) <6:
+            marks = marks+" "
+        print(" " + channel_text+band_text+marks+str(row["count"]))
+    print(" quietest:",quiet["channel"],"on",quiet["band"])
 def scan_few_times():
     saved = {}
     last_network = []
@@ -217,26 +276,26 @@ def show_networks(networks):
         crowd = count_on_channel(networks, item["channel"])
         final,score,steady, reasons, steady_reasons = rate_network(item, crowd)
         print(item["name"])
-        print(" score:",str(final)+ "/10")
-        print(" security score:",str(score)+ "/10")
-        print(" stability score:",str(steady)+ "/10")
-        print(" security:", item["auth"])
-        print( "signal:", item["signal"])
+        print(" score: ",str(final)+ "/10")
+        print(" security score : ",str(score)+ "/10")
+        print(" stability score : ",str(steady)+ "/10")
+        print( "signal: ", item["signal"])
         jump = 0
         if "jump" in item:
             jump = item["jump"]
-        print(" jump:", str(jump)+"%")
-        print(" channel:", item["channel"])
-        print(" band:", item["band"])
-        print(" why:")
+        print(" jump: ", str(jump)+"%")
+        print(" channel: ", item["channel"])
+        print(" band: ", item["band"])
+        print(" why: ")
         for reason in reasons:
-            print(" - security:", reason)
+            print("  security: ", reason)
         for reason in steady_reasons:
-            print(" - stability:", reason)
-        print("")
+            print("  stability :", reason)
+        print("--------------------")
 print("scanning a few times...")
 networks = scan_few_times()
 if len(networks) == 0:
     print("No networks found")
 else:
     show_networks(networks) 
+    show_channels(networks)
