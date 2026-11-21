@@ -1,6 +1,3 @@
-# MIT License
-# Copyright (c) 2026 Jonathan Jacob
-
 import subprocess
 import time
 
@@ -33,6 +30,33 @@ def security_score(auth):
         return 1, "bad"
     return 0, "unknown"
 
+def read_cipher(item):
+    cipher = "?"
+    if "cipher" in item:
+        cipher = item["cipher"]
+    if cipher == "":
+        cipher = "?"
+    return cipher
+
+def radio_info(item):
+    radio = "?"
+    if "radio" in item:
+        radio = item["radio"]
+    if radio == "":
+        radio = "?"
+    text = radio.lower()
+    if "be" in text:
+        return "WIFI 7",False
+    if "ax" in text:
+        return "WIFI 6",False
+    if "ac" in text:
+        return "WIFI 5",False
+    if "802.11n" in text:
+        return "WIFI 4",True
+    if "802.11a" in text or "802.11b" in text or "802.11g" in text:
+        return "old WIFI",True
+    return radio,False
+
 def read_networks(text):
     networks = []
     current = None
@@ -47,11 +71,17 @@ def read_networks(text):
                 "auth": "unknown",
                 "signal": "?",
                 "channel": "?",
-                "band": "?"
+                "band": "?",
+                "cipher": "?",
+                "radio": "?"
             }
             networks.append(current)
         elif current is not None and line.startswith("Authentication"):
             current["auth"] = line.split(":", 1)[1].strip()
+        elif current is not None and line.startswith("Encryption"):
+            current["cipher"] = line.split(":",1)[1].strip()
+        elif current is not None and line.startswith("Radio type") and current["radio"] == "?":
+            current["radio"] = line.split(":",1)[1].strip()
         elif current is not None and line.startswith("Signal"):
             new_signal = line.split(":", 1)[1].strip()
             new_text = new_signal.replace("%","").strip()
@@ -66,6 +96,7 @@ def read_networks(text):
                 current["signal"] = new_signal
                 current["channel"] = "?"
                 current["band"] = "?"
+                current["radio"] = "?"
         elif current is not None and line.startswith("Channel") and current["channel"] == "?":
             current["channel"] = line.split(":", 1)[1].strip()
         elif current is not None and line.startswith("Band") and current["band"] == "?":
@@ -205,6 +236,11 @@ def rate_network(item,crowd):
     reasons = []
     score, label = security_score(item["auth"])
     reasons.append(label + " security")
+    cipher = read_cipher(item)
+    cipher_text = cipher.lower()
+    if "tkip" in cipher_text:
+        score = score-1
+        reasons.append("old encryption TKIP")
     steady = 10
     steady_reasons = []
     signal_text = item["signal"].replace("%","").strip()
@@ -246,6 +282,10 @@ def rate_network(item,crowd):
         elif jump >= 15:
             steady = steady-1
             steady_reasons.append("signal moves a bit")
+    radio_word,radio_old = radio_info(item)
+    if radio_old == True:
+        steady = steady-1
+        steady_reasons.append("older WIFI")
     if score <0:
         score=0
     if score >10:
@@ -278,6 +318,8 @@ def show_networks(networks):
         print(item["name"])
         print(" score: ",str(final)+ "/10")
         print(" security score : ",str(score)+ "/10")
+        cipher = read_cipher(item)
+        print(" encryption:",cipher)
         print(" stability score : ",str(steady)+ "/10")
         print( "signal: ", item["signal"])
         jump = 0
@@ -286,6 +328,8 @@ def show_networks(networks):
         print(" jump: ", str(jump)+"%")
         print(" channel: ", item["channel"])
         print(" band: ", item["band"])
+        radio_word,radio_old = radio_info(item)
+        print(" radio: ",radio_word)
         print(" why: ")
         for reason in reasons:
             print("  security: ", reason)
