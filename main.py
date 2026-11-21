@@ -57,6 +57,26 @@ def radio_info(item):
         return "old WIFI",True
     return radio,False
 
+def read_aps(item):
+    aps = 0
+    if "aps" in item:
+        aps = item["aps"]
+    return aps
+
+def also_on_text(item):
+    if "channels" not in item:
+        return ""
+    text = ""
+    for channel in item["channels"]:
+        if channel == item["channel"]:
+            continue
+        if channel == "?":
+            continue
+        if text != "":
+            text = text + ", "
+        text = text+channel
+    return text
+
 def read_networks(text):
     networks = []
     current = None
@@ -73,7 +93,9 @@ def read_networks(text):
                 "channel": "?",
                 "band": "?",
                 "cipher": "?",
-                "radio": "?"
+                "radio": "?",
+                "aps": 0,
+                "channels": []
             }
             networks.append(current)
         elif current is not None and line.startswith("Authentication"):
@@ -82,6 +104,18 @@ def read_networks(text):
             current["cipher"] = line.split(":",1)[1].strip()
         elif current is not None and line.startswith("Radio type") and current["radio"] == "?":
             current["radio"] = line.split(":",1)[1].strip()
+        elif current is not None and line.startswith("BSSID"):
+            current["aps"] = current["aps"]+1
+        elif current is not None and line.startswith("Channel"):
+            channel = line.split(":",1)[1].strip()
+            if current["channel"] == "?":
+                current["channel"] = channel
+            found = False
+            for old in current["channels"]:
+                if old == channel:
+                    found=True
+            if found == False and channel != "":
+                current["channels"].append(channel)
         elif current is not None and line.startswith("Signal"):
             new_signal = line.split(":", 1)[1].strip()
             new_text = new_signal.replace("%","").strip()
@@ -97,8 +131,6 @@ def read_networks(text):
                 current["channel"] = "?"
                 current["band"] = "?"
                 current["radio"] = "?"
-        elif current is not None and line.startswith("Channel") and current["channel"] == "?":
-            current["channel"] = line.split(":", 1)[1].strip()
         elif current is not None and line.startswith("Band") and current["band"] == "?":
             current["band"] = line.split(":", 1)[1].strip()
     return networks
@@ -183,6 +215,19 @@ def show_channels(networks):
             marks = marks+" "
         print(" " + channel_text+band_text+marks+str(row["count"]))
     print(" quietest:",quiet["channel"],"on",quiet["band"])
+
+def readings_text(item):
+    if "readings" not in item:
+        return "?"
+    text=""
+    for num in item["readings"]:
+        if text != "":
+            text = text+" "
+        text = text+str(num)+"%"
+    if text == "":
+        return "?"
+    return text
+
 def scan_few_times():
     saved = {}
     last_network = []
@@ -206,9 +251,12 @@ def scan_few_times():
             time.sleep(2)
     for item in last_network:
         item["jump"] = 0
+        item["readings"] = []
         if item["name"] not in saved:
             continue
         nums = saved[item["name"]]
+        for num in nums:
+            item["readings"].append(num)
         if len(nums) < 2:
             continue
         biggest = nums[0]
@@ -286,6 +334,9 @@ def rate_network(item,crowd):
     if radio_old == True:
         steady = steady-1
         steady_reasons.append("older WIFI")
+    aps = read_aps(item)
+    if aps >1:
+        steady_reasons.append("more than one access")
     if score <0:
         score=0
     if score >10:
@@ -322,14 +373,20 @@ def show_networks(networks):
         print(" encryption:",cipher)
         print(" stability score : ",str(steady)+ "/10")
         print( "signal: ", item["signal"])
+        print("readings: ",readings_text(item))
         jump = 0
         if "jump" in item:
             jump = item["jump"]
         print(" jump: ", str(jump)+"%")
         print(" channel: ", item["channel"])
+        also = also_on_text(item)
+        if also != "":
+            print(" also on: ",also)
         print(" band: ", item["band"])
         radio_word,radio_old = radio_info(item)
         print(" radio: ",radio_word)
+        aps = read_aps(item)
+        print(" access points: ",str(aps))
         print(" why: ")
         for reason in reasons:
             print("  security: ", reason)
